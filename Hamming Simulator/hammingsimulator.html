@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Hamming SEC-DED Simülatörü</title>
+  <style>
+    body {
+      background-color: black;
+      color: limegreen;
+      font-family: monospace;
+      text-align: center;
+      padding: 20px;
+    }
+    .bit {
+      display: inline-block;
+      width: 30px;
+      height: 30px;
+      margin: 4px;
+      border: 1px solid limegreen;
+      line-height: 30px;
+      color: limegreen;
+    }
+    .hata { background-color: red; color: white; }
+    .duzeltildi { background-color: orange; color: black; }
+    .bit-index {
+      font-size: 10px;
+      display: block;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Hamming SEC-DED Simülatörü</h2>
+
+  <label for="uzunlukSec">Veri Uzunluğu: </label>
+  <select id="uzunlukSec">
+    <option value="8">8 bit</option>
+    <option value="16">16 bit</option>
+    <option value="32">32 bit</option>
+  </select><br><br>
+
+  <label for="veriGiris">Veriyi girin (örneğin 10101010): </label><br>
+  <input type="text" id="veriGiris" maxlength="32"><br><br>
+
+  <button onclick="hammingKodla()">Hamming Kodunu Üret</button>
+  <div id="hammingKodu"></div><br>
+
+  <label for="pozisyon">Hata ekle (pozisyon numarası sağdan sola): </label><br>
+  <input type="number" id="pozisyon"><br>
+  <button onclick="hataEkle()">Hata Ekle</button><br><br>
+
+  <button onclick="hataDuzelt()">Hata Düzelt</button>
+  <div id="duzeltmeSonucu"></div>
+
+  <script>
+    let orijinalKodu = [];
+    let bozulmusKodu = [];
+    let hataPozisyonu = null;
+
+    function hammingKodla() {
+      const giris = document.getElementById("veriGiris").value.trim();
+      const secilenUzunluk = parseInt(document.getElementById("uzunlukSec").value);
+
+      if (giris.length !== secilenUzunluk || /[^01]/.test(giris)) {
+        alert(`${secilenUzunluk} bit uzunluğunda ve sadece 0-1 içeren bir veri girin.`);
+        return;
+      }
+
+      let veri = giris.split('').reverse(); // LSB en başta
+      let toplamUzunluk = veri.length;
+      let parityCount = 0;
+
+      while (Math.pow(2, parityCount) < toplamUzunluk + parityCount + 1) {
+        parityCount++;
+      }
+
+      let kod = [];
+      let veriIndex = 0;
+      for (let i = 1; i <= toplamUzunluk + parityCount; i++) {
+        if ((i & (i - 1)) === 0) {
+          kod[i] = 0; // parite yeri
+        } else {
+          kod[i] = parseInt(veri[veriIndex++]);
+        }
+      }
+
+      // Parite hesapla
+      for (let i = 0; i < parityCount; i++) {
+        let p = Math.pow(2, i);
+        let toplam = 0;
+        for (let j = 1; j < kod.length; j++) {
+          if (j & p) toplam += kod[j];
+        }
+        kod[p] = toplam % 2;
+      }
+
+      orijinalKodu = kod.slice();
+      bozulmusKodu = kod.slice();
+      hataPozisyonu = null;
+      gosterKodu(kod, "hammingKodu", null);
+      document.getElementById("duzeltmeSonucu").innerHTML = '';
+    }
+
+    function gosterKodu(kod, hedefId, hataPos, duzeltildi = false) {
+      let html = '';
+      for (let i = kod.length - 1; i >= 1; i--) {
+        let renk = "";
+        if (i === hataPos) renk = duzeltildi ? 'duzeltildi' : 'hata';
+        html += `<div class="bit ${renk}">${kod[i]}<span class="bit-index">${i}</span></div>`;
+      }
+      document.getElementById(hedefId).innerHTML = html;
+    }
+
+    function hataEkle() {
+      let poz = parseInt(document.getElementById("pozisyon").value);
+      if (isNaN(poz) || poz < 1 || poz >= bozulmusKodu.length) {
+        alert("Geçerli bir pozisyon numarası girin.");
+        return;
+      }
+      bozulmusKodu[poz] ^= 1;
+      hataPozisyonu = poz;
+      gosterKodu(bozulmusKodu, "hammingKodu", poz);
+    }
+
+    function hataDuzelt() {
+      let parityCount = 0;
+      while (Math.pow(2, parityCount) < bozulmusKodu.length) parityCount++;
+
+      let hata = 0;
+      for (let i = 0; i < parityCount; i++) {
+        let p = Math.pow(2, i);
+        let toplam = 0;
+        for (let j = 1; j < bozulmusKodu.length; j++) {
+          if (j & p) toplam += bozulmusKodu[j];
+        }
+        if (toplam % 2 !== 0) {
+          hata += p;
+        }
+      }
+
+      if (hata === 0) {
+        document.getElementById("duzeltmeSonucu").innerHTML = "<br>Hata bulunamadı.";
+        return;
+      }
+
+      if (hata >= bozulmusKodu.length) {
+        document.getElementById("duzeltmeSonucu").innerHTML = "<br>Düzeltilemeyen hata.";
+        return;
+      }
+
+      bozulmusKodu[hata] ^= 1;
+      gosterKodu(bozulmusKodu, "hammingKodu", hata, true);
+      document.getElementById("duzeltmeSonucu").innerHTML = `<br>Hata ${hata}. pozisyonda bulundu ve düzeltildi.`;
+    }
+  </script>
+</body>
+</html>
