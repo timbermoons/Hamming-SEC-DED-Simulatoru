@@ -29,7 +29,7 @@ Bu proje, Hamming kodlama algoritmasını kullanarak bir binary veride tek bitli
 
 ##  Ekran Görünümü
 
-(http![Hamming Simulator](https://github.com/user-attachments/assets/f2837e5b-e8f6-4b9f-94a3-9e7d7a3963d1)
+![Hamming Simulator](https://github.com/user-attachments/assets/f2837e5b-e8f6-4b9f-94a3-9e7d7a3963d1)
 
 
 ## Projenin Açıklama Videosu
